@@ -1,0 +1,102 @@
+structure A = Absyn
+%%
+
+%term 
+	EOF
+	| IF | THEN | ELSE | WHILE | FOR | DO | LET | IN | END | PLUS | MINUS | DIVIDE | TIMES | LBRACE | RBRACE | LPAREN | RPAREN | AND | OR 
+	| ASSIGN | LBRACK | RBRACK | EQ | NEQ | ID of string | ARRAY | TO
+	| BREAK | NIL | GT | GE | LT | LE | OF | VAR | TYPE | SEMICOLON | COMMA
+	| INT of int
+
+%nonterm
+	 program of A.exp
+  | exp of A.exp 
+  | exp_ of A.exp 
+  | varDec of A.exp
+  | tyDec of A.exp  
+  | ty of Symbol.symbol * int
+  | inFixExp of A.exp
+  | assign of A.exp
+  | ifThenElse of A.exp
+  | whileExp of A.exp
+  | forExp of A.exp
+  | letExp of A.exp
+  | body of A.exp
+  | arrayExp of A.exp
+  | seqExp of A.exp
+  | moreExp of (A.exp * int) list
+	
+
+%pos int
+%verbose
+
+%start program
+%eop EOF
+%noshift EOF
+
+%name Tiger
+
+%keyword WHILE FOR BREAK LET IN END VAR TYPE IF THEN ELSE ARRAY DO OF NIL 
+
+%nonassoc ID
+%nonassoc OF
+%nonassoc ASSIGN DO
+%nonassoc THEN
+%nonassoc ELSE
+%nonassoc LBRACK RBRACK
+
+%right COMMA
+%left SEMICOLON
+%left OR 
+%left AND
+%nonassoc EQ NEQ LT LE GT GE 
+%left PLUS MINUS 
+%left TIMES DIVIDE
+
+%prefer THEN ELSE LPAREN
+	
+%value ID ("bogus")
+%value INT (1)
+
+
+%%
+
+program : exp COMMA moreExp (A.SeqExp((exp, expleft)::moreExp))
+		| 				(A.NilExp)
+	| exp 			(exp)
+					
+
+exp : ID LBRACK exp RBRACK OF exp  (A.ArrayExp({typ = Symbol.symbol ID, size = exp1, init = exp2, pos = IDleft}))
+	| ID ASSIGN exp (A.AssignExp({var = ID, exp = exp, pos = IDleft}))
+	| VAR ID ASSIGN exp (A.VarDec({name = Symbol.symbol ID,  typ = NONE, init = exp, pos = VARleft}))
+	| TYPE ID EQ ty SEMICOLON (A.TypeDec({name = Symbol.symbol ID,ty = ty, pos = TYPEleft}))
+	| exp SEMICOLON (A.SeqExp((exp, expleft)::[]))
+
+	
+	| ID 				(A.NameTy(Symbol.symbol ID, IDleft))
+	
+		(* Mathematical Expression *)
+		| exp PLUS exp		(A.OpExp({left = exp1, oper = A.PlusOp, right = exp2, pos = exp1left}))
+		| exp MINUS exp		(A.OpExp({left = exp1, oper = A.MinusOp, right = exp2, pos = exp1left}))
+		| exp TIMES exp		(A.OpExp({left = exp1, oper = A.TimesOp, right = exp2, pos = exp1left}))
+		| exp DIVIDE exp	(A.OpExp({left = exp1, oper = A.DivideOp, right = exp2, pos = exp1left}))
+		| exp EQ exp    	(A.OpExp({left = exp1, oper = A.EqOp, right = exp2, pos = exp1left}))
+ 		| exp NEQ exp   	(A.OpExp({left = exp1, oper = A.NeqOp, right = exp2, pos = exp1left}))
+ 		| exp LT exp    	(A.OpExp({left = exp1, oper = A.LtOp, right = exp2, pos = exp1left}))
+ 		| exp LE exp    	(A.OpExp({left = exp1, oper = A.LeOp, right = exp2, pos = exp1left}))
+ 		| exp GT exp   	 	(A.OpExp({left = exp1, oper = A.GtOp, right = exp2, pos = exp1left}))
+		| exp GE exp 		(A.OpExp({left = exp1, oper = A.GeOp, right = exp2, pos = exp1left}))
+		
+	(* Control statement *)
+	| IF exp THEN exp ELSE exp (A.IfExp({test = exp1, then' = exp2, else' = exp3, pos = IFleft}))
+	| WHILE exp DO exp (A.WhileExp({test = exp1, body = exp2, pos = WHILEleft}))
+
+	| FOR ID ASSIGN exp TO exp DO exp (A.ForExp({var = Symbol.symbol ID, lo = exp1, hi = exp2, body = exp3, pos = FORleft}))
+	| LET VAR ID ASSIGN exp IN exp SEMICOLON END (A.LetExp({decs = A.VarDec({name = Symbol.symbol ID,  typ = NONE, init = exp1, pos = VARleft}) , body = exp2 , pos = LETleft}))
+	| INT (A.IntExp(INT) )
+	| LPAREN exp RPAREN (A.SeqExp((exp, expleft)::[]))
+	
+				
+moreExp : exp COMMA moreExp ((exp,expleft)::moreExp)
+		| 	exp 			((exp,expleft)::[])		
+ty : ID 				(Symbol.symbol ID, IDleft)

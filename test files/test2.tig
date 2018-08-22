@@ -1,0 +1,7 @@
+type x = int; ,
+
+x = 2 + 3;,
+
+if x = 3 
+   then y = 7
+else y = 5;,

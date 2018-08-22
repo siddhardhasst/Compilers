@@ -1,0 +1,21 @@
+type x = int; ,
+
+x = 2 + 3;,
+
+if x = 3 
+   then y = 7
+else y = 5;,
+
+for x:= 2 to  
+do let var s := 6 in
+ 	 y = s*s; end;,
+
+let var y := 6 
+ in
+ 	let var s := 6 in
+ 	 y = s*s; end; 
+ end,
+
+ while x = 5 do s = s + 1;
+
+
